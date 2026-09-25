@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rekap CICO per Petugas — WO & P0 (Performance)</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+  :root{
+    --bg:#f4f6f9; --card:#ffffff; --border:#e2e6ed; --text:#1f2937; --muted:#6b7280;
+    --brand:#0f6cbd; --brand-dark:#0a4f8f; --good:#0f9d58; --warn:#e8710a; --head:#eef2f7;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text);}
+  header{background:linear-gradient(120deg,var(--brand-dark),var(--brand));color:#fff;padding:18px 24px;}
+  header h1{margin:0;font-size:20px;}
+  header p{margin:4px 0 0;font-size:13px;opacity:.9;}
+  .wrap{max-width:1400px;margin:0 auto;padding:18px 24px 60px;}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 18px;margin-bottom:18px;}
+  .card h2{font-size:15px;margin:0 0 12px;color:var(--brand-dark);}
+  details.card{padding:0;}
+  details.card > summary{cursor:pointer;padding:14px 18px;font-weight:600;color:var(--brand-dark);list-style:none;}
+  details.card > summary::-webkit-details-marker{display:none;}
+  details.card > summary::before{content:'▶ ';font-size:11px;}
+  details.card[open] > summary::before{content:'▼ ';}
+  details.card > .inner{padding:0 18px 16px;}
+  .grid{display:grid;gap:12px;}
+  .grid-cfg{grid-template-columns:repeat(4,1fr);}
+  .grid-filter{grid-template-columns:repeat(5,1fr);align-items:end;}
+  .grid-sum{grid-template-columns:repeat(6,1fr);}
+  label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px;}
+  input,select{width:100%;padding:7px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:#fff;}
+  button{cursor:pointer;border:none;border-radius:6px;padding:9px 16px;font-size:13px;font-weight:600;}
+  .btn-primary{background:var(--brand);color:#fff;}
+  .btn-primary:hover{background:var(--brand-dark);}
+  .btn-secondary{background:var(--head);color:var(--text);border:1px solid var(--border);}
+  .btn-row{display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;align-items:center;}
+  .stat{background:var(--head);border-radius:8px;padding:10px 12px;}
+  .stat .lbl{font-size:11px;color:var(--muted);}
+  .stat .val{font-size:19px;font-weight:700;color:var(--brand-dark);margin-top:2px;}
+  table{border-collapse:collapse;width:100%;font-size:12px;}
+  th,td{border:1px solid var(--border);padding:6px 7px;text-align:left;white-space:nowrap;}
+  th{background:var(--head);position:sticky;top:0;font-size:11px;}
+  tbody tr:nth-child(even){background:#fafbfc;}
+  .tbl-scroll{overflow:auto;max-height:520px;border:1px solid var(--border);border-radius:8px;}
+  .status{font-size:12px;color:var(--muted);margin-top:8px;min-height:16px;}
+  .status.err{color:#c0392b;font-weight:600;}
+  .status.ok{color:var(--good);font-weight:600;}
+  .note{font-size:11px;color:var(--muted);margin-top:10px;line-height:1.5;}
+  .tag{display:inline-block;background:#e6f0fa;color:var(--brand-dark);border-radius:4px;padding:1px 6px;font-size:11px;margin-left:6px;}
+</style>
+</head>
+<body>
+<header>
+  <h1>REKAP CICO PER PETUGAS — WO & P0 (PERFORMANCE)</h1>
+  <p>Dashboard performa petugas berdasarkan data live dari Google Sheets (bukan dari file Excel referensi)</p>
+</header>
+
+<div class="wrap">
+
+  <details class="card" id="cfgCard">
+    <summary>Sumber Data (Google Sheets) — atur nama sheet jika berbeda</summary>
+    <div class="inner">
+      <div class="grid grid-cfg">
+        <div style="grid-column:span 2;">
+          <label>ID Spreadsheet Google Sheets</label>
+          <input id="cfgId" value="1RTPWaXQDqz_bYK67Mwc-flXNK_wMtLQKS18Gf1oL-Pg">
+        </div>
+        <div><label>Nama sheet: CICO WO</label><input id="cfgCicoWO" value="Cico WO"></div>
+        <div><label>Nama sheet: CICO P0</label><input id="cfgCicoP0" value="Cico P0"></div>
+        <div><label>Nama sheet: Detail WO</label><input id="cfgDetWO" value="Detail WO"></div>
+        <div><label>Nama sheet: Detail P0</label><input id="cfgDetP0" value="Detail p0"></div>
+        <div><label>Nama sheet: SLA WO</label><input id="cfgSlaWO" value="SLA WO"></div>
+        <div><label>Nama sheet: SLA P0</label><input id="cfgSlaP0" value="SA p0"></div>
+        <div><label>Nama sheet: Koefisien Unit</label><input id="cfgKoef" value="kofisien unit"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn-primary" id="btnLoad">Muat / Refresh Data</button>
+        <span class="status" id="status">Sheet harus dapat diakses "Siapa saja yang memiliki link → Dapat melihat".</span>
+      </div>
+      <p class="note">
+        Rumus mengikuti logika Sheet "Petugas" (Dashboard) pada file Excel referensi: WO dicocokkan lewat No Laporan
+        (CICO WO → Detail WO), SLA WO dicocokkan lewat Fasilitas|Subfasilitas|Peralatan, dan Koefisien Unit dicocokkan
+        lewat Nama UP3. P0 dicocokkan lewat No Penugasan Khusus (CICO P0 → Detail P0), SLA P0 dicocokkan lewat Jenis
+        Penugasan, dan Koefisien Unit dicocokkan lewat Area Petugas. Tidak ada data dari file Excel yang digunakan —
+        seluruh data diambil langsung dari spreadsheet di atas.
+      </p>
+    </div>
+  </details>
+
+  <div class="card">
+    <h2>Filter</h2>
+    <div class="grid grid-filter">
+      <div><label>UP3</label><select id="fUp3"><option value="">(Semua)</option></select></div>
+      <div><label>ULP</label><select id="fUlp"><option value="">(Semua)</option></select></div>
+      <div><label>Nama Petugas</label><select id="fPetugas"><option value="">(Semua)</option></select></div>
+      <div><label>Tanggal Awal</label><input type="date" id="fStart"></div>
+      <div><label>Tanggal Akhir</label><input type="date" id="fEnd"></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn-primary" id="btnApply">Terapkan Filter</button>
+      <button class="btn-secondary" id="btnReset">Reset Filter</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Ringkasan</h2>
+    <div class="grid grid-sum">
+      <div class="stat"><div class="lbl">Jumlah WO</div><div class="val" id="sJmlWO">0</div></div>
+      <div class="stat"><div class="lbl">Jumlah P0</div><div class="val" id="sJmlP0">0</div></div>
+      <div class="stat"><div class="lbl">Total Performa WO</div><div class="val" id="sPerfWO">0</div></div>
+      <div class="stat"><div class="lbl">Total Performa P0</div><div class="val" id="sPerfP0">0</div></div>
+      <div class="stat"><div class="lbl">Total RCT (jam)</div><div class="val" id="sRct">0</div></div>
+      <div class="stat"><div class="lbl">Rata-rata Jam Kerja/Hari</div><div class="val" id="sAvg">0</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Daftar WO <span class="tag" id="cntWO">0 baris</span></h2>
+    <div class="tbl-scroll"><table id="tblWO"><thead></thead><tbody></tbody></table></div>
+  </div>
+
+  <div class="card">
+    <h2>Daftar P0 (Penugasan Khusus) <span class="tag" id="cntP0">0 baris</span></h2>
+    <div class="tbl-scroll"><table id="tblP0"><thead></thead><tbody></tbody></table></div>
+  </div>
+
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+let RAW = null;      // {cicoWO, cicoP0, detWO, detP0, slaWO, slaP0, koef}
+let COMP = null;     // {wo:[], p0:[]}
+
+function csvUrl(id, sheet){
+  return `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheet)}`;
+}
+function fetchSheet(id, sheet){
+  return fetch(csvUrl(id, sheet)).then(r=>{
+    if(!r.ok) throw new Error(`Gagal mengambil sheet "${sheet}" (HTTP ${r.status})`);
+    return r.text();
+  }).then(txt=>{
+    if(/^\s*<HTML|^\s*<!DOCTYPE/i.test(txt)) throw new Error(`Sheet "${sheet}" tidak ditemukan / tidak publik`);
+    const parsed = Papa.parse(txt, {header:true, skipEmptyLines:true});
+    return parsed.data.map(row=>{
+      const o={};
+      Object.keys(row).forEach(k=> o[k.trim()] = (row[k]===undefined||row[k]===null) ? '' : String(row[k]).trim());
+      return o;
+    });
+  });
+}
+function num(v){ if(v===undefined||v===null||v==='') return null; const n=parseFloat(String(v).replace(/,/g,'')); return isNaN(n)?null:n; }
+function stripPosko(s){ return (s||'').replace(/^POSKO\s+/i,'').trim(); }
+function parseDT(str){
+  if(!str) return null;
+  str = str.trim();
+  let d = new Date(str.replace(' ','T'));
+  if(!isNaN(d)) return d;
+  let m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/);
+  if(m) return new Date(+m[3], +m[2]-1, +m[1], +(m[4]||0), +(m[5]||0), +(m[6]||0));
+  return null;
+}
+function dayKey(d){ return d? d.toISOString().slice(0,10) : null; }
+
+async function loadAll(){
+  const id = $('cfgId').value.trim();
+  const names = {
+    cicoWO: $('cfgCicoWO').value.trim(), cicoP0: $('cfgCicoP0').value.trim(),
+    detWO: $('cfgDetWO').value.trim(), detP0: $('cfgDetP0').value.trim(),
+    slaWO: $('cfgSlaWO').value.trim(), slaP0: $('cfgSlaP0').value.trim(), koef: $('cfgKoef').value.trim()
+  };
+  $('status').textContent = 'Memuat 7 sheet...'; $('status').className='status';
+  try{
+    const [cicoWO,cicoP0,detWO,detP0,slaWO,slaP0,koef] = await Promise.all(
+      Object.values(names).map(n=>fetchSheet(id,n))
+    );
+    RAW = {cicoWO,cicoP0,detWO,detP0,slaWO,slaP0,koef};
+    $('status').textContent = `Berhasil: CICO WO ${cicoWO.length}, CICO P0 ${cicoP0.length}, Detail WO ${detWO.length}, Detail P0 ${detP0.length}, SLA WO ${slaWO.length}, SLA P0 ${slaP0.length}, Koef Unit ${koef.length} baris.`;
+    $('status').className='status ok';
+    compute();
+    populateFilterOptions();
+    applyFiltersAndRender();
+  }catch(e){
+    $('status').textContent = 'Gagal memuat data: ' + e.message + ' — cek nama sheet & akses berbagi.';
+    $('status').className='status err';
+    console.error(e);
+  }
+}
+
+function compute(){
+  const detWOByNo = new Map(RAW.detWO.map(r=>[r['NO_LAPORAN'], r]));
+  const slaWOByKey = new Map(RAW.slaWO.map(r=>[`${r['Fasilitas Id']}|${r['Subfasilitas Id']}|${r['Equipment Id']}`, r]));
+  const koefByUp3 = new Map(RAW.koef.map(r=>[r['Nama Up3'], num(r['Koefisien Unit'])]));
+  const detP0ByNo = new Map(RAW.detP0.map(r=>[r['NO_PENUGASAN_KHUSUS'], r]));
+  const slaP0ByJenis = new Map(RAW.slaP0.map(r=>[r['Jenis Pekerjaan'], r]));
+
+  const wo = RAW.cicoWO.map(c=>{
+    const noLap = c['No Laporan'];
+    const d = detWOByNo.get(noLap) || {};
+    const key = `${d['ID_FASILITAS']}|${d['ID_SUB_FASILITAS']}|${d['ID_EQUIPMENT']}`;
+    const sla = slaWOByKey.get(key) || {};
+    const a = num(sla['SLA']), koefWO = num(sla['Koefisien']);
+    const b = num(d['DISPATCH_TIME']), c_ = num(d['TRAVEL_TIME']), fixing = num(d['FIXING_TIME']);
+    const e = num(d['RCT']), rating = num(d['RATING']);
+    const koefUnit = koefByUp3.get(d['NAMA_UP3']);
+    const f = (e!=null && b!=null && c_!=null) ? (e-(b+c_)) : null;
+    const g = (a!=null && f) ? Math.min(a/f, 1.5) : null;
+    const h = rating===5 ? 1.1 : 1;
+    const j=1,k=1,l=1;
+    const m = (koefWO!=null && g!=null && koefUnit!=null) ? (koefWO*g*h*koefUnit*l) : null;
+    const dt = parseDT(c['Tgl Pengerjaan']) || parseDT(c['Check In Petugas']);
+    return {
+      up3:c['UP3'], ulp:stripPosko(c['Posko']), petugas:c['Nama Petugas'], date:dt, dateKey:dayKey(dt),
+      noLaporan:noLap, area:d['NAMA_UP3']||'', rayon:stripPosko(d['NAMA_POSKO']||''),
+      sla:a, dispatch:b, travel:c_, fixing, koefWO, rct:e, durasi:f, perfTugas:g, rating,
+      koefRating:h, koefUnit, koefLaporUlang:j, koefSkip:k, koefPengurang:l, performa:m
+    };
+  }).filter(r=>r.petugas);
+
+  const p0 = RAW.cicoP0.map(c=>{
+    const noTugas = c['No Tugas'];
+    const d = detP0ByNo.get(noTugas) || {};
+    const sla = slaP0ByJenis.get(d['JENIS_PENUGASAN']) || {};
+    const a = num(sla['RCT']), koefP0 = num(sla['Koefisien']);
+    const b = num(d['DISPATCH_TIME']), c_ = num(d['TRAVEL_TIME']);
+    const e = num(d['DURASI_PENUGASAN_KHUSUS']);
+    const koefUnit = koefByUp3.get(d['AREA_PTGS']);
+    const f = (e!=null && b!=null && c_!=null) ? (e-(b+c_)) : null;
+    const g = (a!=null && f) ? Math.min(a/f, 1.5) : null;
+    const i = (koefP0!=null && g!=null && koefUnit!=null) ? (koefP0*g*koefUnit) : null;
+    const dt = parseDT(c['Tgl Pengerjaan']) || parseDT(c['Check In Petugas']);
+    return {
+      up3:c['UP3'], ulp:stripPosko(c['Posko']), petugas:c['Personil Yantek'], date:dt, dateKey:dayKey(dt),
+      noPenugasan:noTugas, area:d['AREA_PTGS']||'', rayon:d['RAYON_PTGS']||'',
+      sla:a, dispatch:b, travel:c_, koefP0, rct:e, durasi:f, perfTugas:g, koefUnit, performa:i
+    };
+  }).filter(r=>r.petugas);
+
+  COMP = {wo, p0};
+}
+
+function populateFilterOptions(){
+  const all = [...COMP.wo, ...COMP.p0];
+  const up3s = [...new Set(all.map(r=>r.up3).filter(Boolean))].sort();
+  fillSelect('fUp3', up3s);
+  updateUlpOptions(); updatePetugasOptions();
+  const dates = all.map(r=>r.date).filter(Boolean);
+  if(dates.length){
+    const min = new Date(Math.min(...dates)), max = new Date(Math.max(...dates));
+    $('fStart').value = dayKey(min); $('fEnd').value = dayKey(max);
+  }
+}
+function fillSelect(id, arr, keep){
+  const sel = $(id); const cur = keep!==undefined?keep:sel.value;
+  sel.innerHTML = '<option value="">(Semua)</option>' + arr.map(v=>`<option value="${v}">${v}</option>`).join('');
+  if(arr.includes(cur)) sel.value = cur;
+}
+function updateUlpOptions(){
+  const up3 = $('fUp3').value;
+  const all = [...COMP.wo, ...COMP.p0].filter(r=> !up3 || r.up3===up3);
+  fillSelect('fUlp', [...new Set(all.map(r=>r.ulp).filter(Boolean))].sort());
+}
+function updatePetugasOptions(){
+  const up3 = $('fUp3').value, ulp = $('fUlp').value;
+  const all = [...COMP.wo, ...COMP.p0].filter(r=> (!up3||r.up3===up3) && (!ulp||r.ulp===ulp));
+  fillSelect('fPetugas', [...new Set(all.map(r=>r.petugas).filter(Boolean))].sort());
+}
+
+function applyFiltersAndRender(){
+  if(!COMP) return;
+  const up3=$('fUp3').value, ulp=$('fUlp').value, pet=$('fPetugas').value;
+  const start = $('fStart').value ? new Date($('fStart').value+'T00:00:00') : null;
+  const end = $('fEnd').value ? new Date($('fEnd').value+'T23:59:59') : null;
+  const match = r => (!up3||r.up3===up3) && (!ulp||r.ulp===ulp) && (!pet||r.petugas===pet)
+                      && (!start||!r.date||r.date>=start) && (!end||!r.date||r.date<=end);
+  const wo = COMP.wo.filter(match), p0 = COMP.p0.filter(match);
+
+  const sumWO = wo.reduce((s,r)=>s+(r.performa||0),0);
+  const sumP0 = p0.reduce((s,r)=>s+(r.performa||0),0);
+  const rctH = (wo.reduce((s,r)=>s+(r.rct||0),0) + p0.reduce((s,r)=>s+(r.rct||0),0))/60;
+  const days = new Set([...wo,...p0].map(r=>r.dateKey).filter(Boolean)).size;
+  const avg = days? rctH/days : 0;
+
+  $('sJmlWO').textContent = wo.length;
+  $('sJmlP0').textContent = p0.length;
+  $('sPerfWO').textContent = sumWO.toFixed(2);
+  $('sPerfP0').textContent = sumP0.toFixed(2);
+  $('sRct').textContent = rctH.toFixed(2);
+  $('sAvg').textContent = avg.toFixed(2);
+  $('cntWO').textContent = wo.length + ' baris';
+  $('cntP0').textContent = p0.length + ' baris';
+
+  renderTable('tblWO', wo, [
+    ['No Laporan','noLaporan'],['ID Petugas','petugas'],['Area Ptgs','area'],['Rayon Ptgs','rayon'],
+    ['SLA WO (a)','sla'],['Dispatch Time (b)','dispatch'],['Travel Time (c)','travel'],['Fixing Time','fixing'],
+    ['Koefisien WO (d)','koefWO'],['RCT (e)','rct'],['Durasi Penugasan (f)','durasi'],
+    ['Performance Penugasan (g)','perfTugas'],['Rating','rating'],['Koefisien Rating (h)','koefRating'],
+    ['Koefisien Unit (i)','koefUnit'],['Koef Lapor Ulang (j)','koefLaporUlang'],['Koef Skipped Step (k)','koefSkip'],
+    ['Koef Pengurang (l)','koefPengurang'],['Performance WO (m)','performa']
+  ]);
+  renderTable('tblP0', p0, [
+    ['No Penugasan Khusus','noPenugasan'],['ID Petugas','petugas'],['Area Ptgs','area'],['Rayon Ptgs','rayon'],
+    ['SLA P0 (a)','sla'],['Dispatch Time (b)','dispatch'],['Travel Time (c)','travel'],['Koefisien P0 (d)','koefP0'],
+    ['RCT (e)','rct'],['Durasi Penugasan (f)','durasi'],['Performance Penugasan (g)','perfTugas'],
+    ['Koefisien Unit (h)','koefUnit'],['Performance P0 (i)','performa']
+  ]);
+}
+function fmt(v){
+  if(v===null||v===undefined||v==='') return '';
+  if(typeof v==='number') return Number.isInteger(v)? v : v.toFixed(3);
+  return v;
+}
+function renderTable(tblId, rows, cols){
+  const tbl = $(tblId);
+  tbl.querySelector('thead').innerHTML = '<tr>'+cols.map(c=>`<th>${c[0]}</th>`).join('')+'</tr>';
+  tbl.querySelector('tbody').innerHTML = rows.map(r=>
+    '<tr>'+cols.map(c=>`<td>${fmt(r[c[1]])}</td>`).join('')+'</tr>'
+  ).join('') || `<tr><td colspan="${cols.length}" style="color:#9aa3ad">Tidak ada data untuk filter ini.</td></tr>`;
+}
+
+$('btnLoad').addEventListener('click', loadAll);
+$('btnApply').addEventListener('click', applyFiltersAndRender);
+$('btnReset').addEventListener('click', ()=>{
+  $('fUp3').value=''; $('fUlp').value=''; $('fPetugas').value='';
+  if(COMP){ populateFilterOptions(); applyFiltersAndRender(); }
+});
+$('fUp3').addEventListener('change', ()=>{ updateUlpOptions(); updatePetugasOptions(); });
+$('fUlp').addEventListener('change', updatePetugasOptions);
+</script>
+</body>
+</html>
