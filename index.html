@@ -37,6 +37,10 @@ tr:hover{background:#25324a}
 .err{color:var(--bad)}
 .pg{display:flex;gap:6px;align-items:center}
 .hide{display:none}
+.datewrap{position:relative}
+.datewrap input[type=text]{cursor:pointer;padding-right:26px;width:100%}
+.datewrap .cal-icon{position:absolute;right:8px;top:50%;transform:translateY(-50%);pointer-events:none;font-size:12px}
+.datewrap .dateHidden{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;top:0;left:0}
 input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);cursor:pointer}
 </style>
 </head>
@@ -50,8 +54,12 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);cursor:poin
       <div class="f"><label>UP3</label><select id="fUP3"><option value="">Semua UP3</option></select></div>
       <div class="f"><label>ULP</label><select id="fULP"><option value="">Semua ULP</option></select></div>
       <div class="f"><label>Nama Petugas</label><select id="fPet"><option value="">Semua Petugas</option></select></div>
-      <div class="f"><label>Tanggal Awal</label><input type="date" id="fStart"></div>
-      <div class="f"><label>Tanggal Akhir</label><input type="date" id="fEnd"></div>
+      <div class="f"><label>Tanggal Awal</label>
+        <div class="datewrap"><input type="text" id="fStartText" readonly placeholder="dd/mm/yyyy"><span class="cal-icon">📅</span><input type="date" id="fStart" class="dateHidden"></div>
+      </div>
+      <div class="f"><label>Tanggal Akhir</label>
+        <div class="datewrap"><input type="text" id="fEndText" readonly placeholder="dd/mm/yyyy"><span class="cal-icon">📅</span><input type="date" id="fEnd" class="dateHidden"></div>
+      </div>
       <div class="f"><button id="btnApply">Terapkan Filter</button></div>
       <div class="f"><button id="btnReload" class="secondary">Sinkronkan Sekarang</button></div>
     </div>
@@ -69,6 +77,7 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);cursor:poin
     <div class="toolbar">
       <input type="text" id="search" placeholder="Cari no laporan / nama petugas..." style="min-width:260px">
       <div class="pg">
+        <button class="secondary" id="btnExport">⬇ Export ke Excel</button>
         <button class="secondary" id="prevPg">‹ Prev</button>
         <span class="status" id="pgInfo"></span>
         <button class="secondary" id="nextPg">Next ›</button>
@@ -79,6 +88,7 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);cursor:poin
   </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 const SS_ID='1RTPWaXQDqz_bYK67Mwc-flXNK_wMtLQKS18Gf1oL-Pg';
 const SHEETS=['CICO WO','CICO P0','detail WO','detail P0','SLA WO','SLA P0','koef unit'];
@@ -115,6 +125,8 @@ function parseDate(v){
   return null;
 }
 function dkey(d){return d?d.toISOString().slice(0,10):null;}
+function fmtDateID(iso){if(!iso)return '';const[y,m,d]=iso.split('-');return `${d}/${m}/${y}`;}
+function norm(v){return String(v||'').trim().replace(/\s+/g,' ').toUpperCase();}
 function stripPosko(s){return (s||'').replace(/^POSKO\s*/i,'').trim();}
 function fmt(n){return typeof n==='number'?(Math.round(n*100)/100).toLocaleString('id-ID',{minimumFractionDigits:2,maximumFractionDigits:2}):n||'';}
 
@@ -145,9 +157,9 @@ async function loadAll(){
 function buildIndices(){
   IDX.detWO=new Map(D.detWO.map(r=>[r.NO_LAPORAN,r]));
   IDX.detP0=new Map(D.detP0.map(r=>[r.NO_PENUGASAN_KHUSUS,r]));
-  IDX.slaWO=new Map(D.slaWO.map(r=>[[r['Fasilitas Id'],r['Subfasilitas Id'],r['Equipment Id']].join('|'),r]));
-  IDX.slaP0=new Map(D.slaP0.map(r=>[r['Jenis Pekerjaan'],r]));
-  IDX.koefU=new Map(D.koefU.map(r=>[r['Nama Up3'],num(r['Koefisien Unit'])]));
+  IDX.slaWO=new Map(D.slaWO.map(r=>[[norm(r['Fasilitas Id']),norm(r['Subfasilitas Id']),norm(r['Equipment Id'])].join('|'),r]));
+  IDX.slaP0=new Map(D.slaP0.map(r=>[norm(r['Jenis Pekerjaan']),r]));
+  IDX.koefU=new Map(D.koefU.map(r=>[norm(r['Nama Up3']),num(r['Koefisien Unit'])]));
 }
 
 function compute(){
@@ -158,14 +170,14 @@ function compute(){
     const up3=r['UP3'], ulp=stripPosko(r['Posko']);
     const base={noLap, petugas:r['Nama Petugas'], up3, ulp, tgl};
     if(!det)return {...base, valid:false};
-    const key=[det.ID_FASILITAS,det.ID_SUB_FASILITAS,det.ID_EQUIPMENT].join('|');
+    const key=[norm(det.ID_FASILITAS),norm(det.ID_SUB_FASILITAS),norm(det.ID_EQUIPMENT)].join('|');
     const sla=IDX.slaWO.get(key);
     const a=sla?num(sla.SLA):0, d=sla?num(sla.Koefisien):0;
     const b=num(det.DISPATCH_TIME), c=num(det.TRAVEL_TIME), fix=num(det.FIXING_TIME), e=num(det.RCT);
     const f=e-(b+c); const g=f>0?Math.min(a/f,1.5):0;
     const rating=num(det.RATING); const h=rating===5?1.1:1;
-    const i=IDX.koefU.get(det.NAMA_UP3)||0; const m=d*g*h*i;
-    return {...base, area:det.NAMA_UP3, rayon:stripPosko(det.NAMA_POSKO), a,b,c,fix,d,e,f,g,rating,h,i,m, valid:true};
+    const i=IDX.koefU.get(norm(det.NAMA_UP3))||0; const m=d*g*h*i;
+    return {...base, a,b,c,fix,d,e,f,g,rating,h,i,m, valid:true};
   });
   p0Rows=D.cicoP0.map(r=>{
     const noTgs=r['No Tugas'];
@@ -174,12 +186,12 @@ function compute(){
     const up3=r['UP3'], ulp=stripPosko(r['Posko']);
     const base={noTgs, petugas:r['Personil Yantek'], up3, ulp, tgl};
     if(!det)return {...base, valid:false};
-    const sla=IDX.slaP0.get(det.JENIS_PENUGASAN);
+    const sla=IDX.slaP0.get(norm(det.JENIS_PENUGASAN));
     const a=sla?num(sla.RCT):0, d=sla?num(sla.Koefisien):0;
     const b=num(det.DISPATCH_TIME), c=num(det.TRAVEL_TIME), e=num(det.DURASI_PENUGASAN_KHUSUS);
     const f=e-(b+c); const g=f>0?Math.min(a/f,1.5):0;
-    const h=IDX.koefU.get(det.AREA_PTGS)||0; const i=d*g*h;
-    return {...base, area:det.AREA_PTGS, rayon:det.RAYON_PTGS, a,b,c,d,e,f,g,h,i, valid:true};
+    const h=IDX.koefU.get(norm(det.AREA_PTGS))||0; const i=d*g*h;
+    return {...base, jenis:det.JENIS_PENUGASAN, a,b,c,d,e,f,g,h,i, valid:true};
   });
 }
 
@@ -278,8 +290,8 @@ function renderCards(ff){
   document.getElementById('cards').innerHTML=cards.map(([l,v])=>`<div class="card"><div class="v">${v}</div><div class="l">${l}</div></div>`).join('');
 }
 
-const woCols=[['No Laporan','noLap'],['ID Petugas','petugas'],['UP3','up3'],['ULP','ulp'],['Area','area'],['Rayon','rayon'],['SLA(a)','a'],['Dispatch(b)','b'],['Travel(c)','c'],['Fixing','fix'],['Koef WO(d)','d'],['RCT(e)','e'],['Durasi(f)','f'],['Perf Tugas(g)','g'],['Rating','rating'],['Koef Rating(h)','h'],['Koef Unit(i)','i'],['Performance WO(m)','m']];
-const p0Cols=[['No Penugasan','noTgs'],['ID Petugas','petugas'],['UP3','up3'],['ULP','ulp'],['Area','area'],['Rayon','rayon'],['SLA(a)','a'],['Dispatch(b)','b'],['Travel(c)','c'],['Koef P0(d)','d'],['RCT(e)','e'],['Durasi(f)','f'],['Perf Tugas(g)','g'],['Koef Unit(h)','h'],['Performance P0(i)','i']];
+const woCols=[['No Laporan','noLap'],['ID Petugas','petugas'],['UP3','up3'],['ULP','ulp'],['SLA(a)','a'],['Dispatch(b)','b'],['Travel(c)','c'],['Fixing','fix'],['Koef WO(d)','d'],['RCT(e)','e'],['Durasi(f)','f'],['Perf Tugas(g)','g'],['Rating','rating'],['Koef Rating(h)','h'],['Koef Unit(i)','i'],['Performance WO(m)','m']];
+const p0Cols=[['No Penugasan','noTgs'],['ID Petugas','petugas'],['UP3','up3'],['ULP','ulp'],['Jenis Penugasan','jenis'],['SLA(a)','a'],['Dispatch(b)','b'],['Travel(c)','c'],['Koef P0(d)','d'],['RCT(e)','e'],['Durasi(f)','f'],['Perf Tugas(g)','g'],['Koef Unit(h)','h'],['Performance P0(i)','i']];
 
 function renderTable(){
   const cols=curTab==='wo'?woCols:p0Cols;
@@ -298,6 +310,26 @@ function renderTable(){
   document.getElementById('wrapP0').classList.toggle('hide',curTab!=='p0');
   document.getElementById('tbWO').parentElement.parentElement.classList.toggle('hide',curTab!=='wo');
 }
+
+function wireDatePicker(textId,dateId){
+  const disp=document.getElementById(textId), inp=document.getElementById(dateId);
+  const open=()=>{if(inp.showPicker)inp.showPicker();else inp.focus();};
+  disp.addEventListener('click',open);
+  inp.addEventListener('change',()=>{disp.value=fmtDateID(inp.value);});
+}
+wireDatePicker('fStartText','fStart');
+wireDatePicker('fEndText','fEnd');
+
+function exportExcel(){
+  if(!filtersApplied){alert('Terapkan filter terlebih dahulu sebelum export.');return;}
+  const wb=XLSX.utils.book_new();
+  const wsWO=XLSX.utils.aoa_to_sheet([woCols.map(c=>c[0]),...fWO.map(r=>woCols.map(c=>r[c[1]]??''))]);
+  XLSX.utils.book_append_sheet(wb,wsWO,'Daftar WO');
+  const wsP0=XLSX.utils.aoa_to_sheet([p0Cols.map(c=>c[0]),...fP0.map(r=>p0Cols.map(c=>r[c[1]]??''))]);
+  XLSX.utils.book_append_sheet(wb,wsP0,'Daftar P0');
+  XLSX.writeFile(wb,'Kinerja_Petugas_Yantek_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+document.getElementById('btnExport').addEventListener('click',exportExcel);
 
 document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
