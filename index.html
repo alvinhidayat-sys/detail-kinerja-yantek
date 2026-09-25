@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Dashboard Performa Yantek - CICO WO & P0</title>
+<title>Detail Kinerja Petugas Yantek</title>
 <style>
 :root{--bg:#0f172a;--card:#1e293b;--card2:#162033;--accent:#3b82f6;--text:#e2e8f0;--muted:#94a3b8;--border:#334155;--good:#22c55e;--warn:#f59e0b;--bad:#ef4444}
 *{box-sizing:border-box}
@@ -37,12 +37,12 @@ tr:hover{background:#25324a}
 .err{color:var(--bad)}
 .pg{display:flex;gap:6px;align-items:center}
 .hide{display:none}
+input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);cursor:pointer}
 </style>
 </head>
 <body>
 <header>
-<h1>Dashboard Performa Yantek — CICO WO &amp; Penugasan Khusus (P0)</h1>
-<div class="sub">Sumber data: Google Spreadsheet (live) — CICO WO, CICO P0, detail WO, detail P0, SLA WO, SLA P0, koef unit</div>
+<h1>Detail Kinerja Petugas Yantek</h1>
 </header>
 <div class="wrap">
   <div class="panel">
@@ -53,7 +53,7 @@ tr:hover{background:#25324a}
       <div class="f"><label>Tanggal Awal</label><input type="date" id="fStart"></div>
       <div class="f"><label>Tanggal Akhir</label><input type="date" id="fEnd"></div>
       <div class="f"><button id="btnApply">Terapkan Filter</button></div>
-      <div class="f"><button id="btnReload" class="secondary">Muat Ulang Data</button></div>
+      <div class="f"><button id="btnReload" class="secondary">Sinkronkan Sekarang</button></div>
     </div>
     <div class="status" id="status">Memuat data dari Google Sheets...</div>
   </div>
@@ -83,7 +83,7 @@ tr:hover{background:#25324a}
 const SS_ID='1RTPWaXQDqz_bYK67Mwc-flXNK_wMtLQKS18Gf1oL-Pg';
 const SHEETS=['CICO WO','CICO P0','detail WO','detail P0','SLA WO','SLA P0','koef unit'];
 const D={}; const IDX={};
-let woRows=[], p0Rows=[], curTab='wo', page=0, perPage=100;
+let woRows=[], p0Rows=[], curTab='wo', page=0, perPage=100, filtersApplied=false;
 
 function csvUrl(name){return `https://docs.google.com/spreadsheets/d/${SS_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(name)}`;}
 
@@ -133,8 +133,9 @@ async function loadAll(){
     buildIndices();
     compute();
     buildFilterOptions();
-    applyFilters();
-    document.getElementById('status').textContent='Data dimuat: '+cicoWO.length+' WO, '+cicoP0.length+' P0. Terakhir dimuat '+new Date().toLocaleTimeString('id-ID');
+    filtersApplied=false;
+    showEmptyState();
+    document.getElementById('status').textContent='Data siap ('+cicoWO.length+' WO, '+cicoP0.length+' P0). Pilih filter lalu klik "Terapkan Filter". Terakhir sinkron '+new Date().toLocaleTimeString('id-ID');
   }catch(e){
     document.getElementById('status').textContent='Error: '+e.message;
     document.getElementById('status').classList.add('err');
@@ -183,20 +184,36 @@ function compute(){
 }
 
 function buildFilterOptions(){
-  const up3s=new Set(), ulps=new Set(), pets=new Set();
+  const up3Sel=document.getElementById('fUP3').value;
+  const up3s=new Set();
+  [...D.cicoWO,...D.cicoP0].forEach(r=>{if(r.UP3)up3s.add(r.UP3);});
+  fillSelect('fUP3',[...up3s].sort());
+
+  const ulps=new Set();
   [...D.cicoWO,...D.cicoP0].forEach(r=>{
-    if(r.UP3)up3s.add(r.UP3);
+    if(up3Sel&&r.UP3!==up3Sel)return;
     if(r.Posko)ulps.add(stripPosko(r.Posko));
   });
-  D.cicoWO.forEach(r=>r['Nama Petugas']&&pets.add(r['Nama Petugas']));
-  D.cicoP0.forEach(r=>r['Personil Yantek']&&pets.add(r['Personil Yantek']));
-  fillSelect('fUP3',[...up3s].sort());
   fillSelect('fULP',[...ulps].sort());
+  const ulpSel=document.getElementById('fULP').value;
+
+  const pets=new Set();
+  D.cicoWO.forEach(r=>{
+    if(up3Sel&&r.UP3!==up3Sel)return;
+    if(ulpSel&&stripPosko(r.Posko)!==ulpSel)return;
+    if(r['Nama Petugas'])pets.add(r['Nama Petugas']);
+  });
+  D.cicoP0.forEach(r=>{
+    if(up3Sel&&r.UP3!==up3Sel)return;
+    if(ulpSel&&stripPosko(r.Posko)!==ulpSel)return;
+    if(r['Personil Yantek'])pets.add(r['Personil Yantek']);
+  });
   fillSelect('fPet',[...pets].sort());
 }
 function fillSelect(id,arr){
   const sel=document.getElementById(id); const cur=sel.value;
-  sel.innerHTML='<option value="">Semua</option>'+arr.map(v=>`<option value="${v.replace(/"/g,'&quot;')}">${v}</option>`).join('');
+  const label=id==='fUP3'?'Semua UP3':id==='fULP'?'Semua ULP':'Semua Petugas';
+  sel.innerHTML=`<option value="">${label}</option>`+arr.map(v=>`<option value="${v.replace(/"/g,'&quot;')}">${v}</option>`).join('');
   if(arr.includes(cur))sel.value=cur;
 }
 
@@ -221,7 +238,17 @@ function matchRow(r,ff){
 }
 
 let fWO=[], fP0=[];
+function showEmptyState(){
+  document.getElementById('cards').innerHTML='';
+  const msg='<tr><td colspan="20">Silakan pilih filter lalu klik "Terapkan Filter" untuk menampilkan data.</td></tr>';
+  document.getElementById('thWO').innerHTML='';
+  document.getElementById('thP0').innerHTML='';
+  document.getElementById('tbWO').innerHTML=msg;
+  document.getElementById('tbP0').innerHTML=msg;
+  document.getElementById('pgInfo').textContent='';
+}
 function applyFilters(){
+  filtersApplied=true;
   const ff=currentFilters();
   fWO=woRows.filter(r=>matchRow(r,ff));
   fP0=p0Rows.filter(r=>matchRow(r,ff));
@@ -278,8 +305,9 @@ document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
 }));
 document.getElementById('btnApply').addEventListener('click',applyFilters);
 document.getElementById('btnReload').addEventListener('click',loadAll);
-document.getElementById('search').addEventListener('input',()=>{applyFilters();});
+document.getElementById('search').addEventListener('input',()=>{if(filtersApplied)applyFilters();});
 document.getElementById('fUP3').addEventListener('change',()=>{buildFilterOptions();});
+document.getElementById('fULP').addEventListener('change',()=>{buildFilterOptions();});
 document.getElementById('prevPg').addEventListener('click',()=>{if(page>0){page--;renderTable();}});
 document.getElementById('nextPg').addEventListener('click',()=>{const rows=curTab==='wo'?fWO:fP0; if((page+1)*perPage<rows.length){page++;renderTable();}});
 
