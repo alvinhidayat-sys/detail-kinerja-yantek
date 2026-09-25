@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Rekap CICO per Petugas — WO & P0 (Performance)</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
   :root{
     --bg:#f4f6f9; --card:#ffffff; --border:#e2e6ed; --text:#1f2937; --muted:#6b7280;
@@ -100,6 +101,7 @@
     <div class="btn-row">
       <button class="btn-primary" id="btnApply">Terapkan Filter</button>
       <button class="btn-secondary" id="btnReset">Reset Filter</button>
+      <button class="btn-secondary" id="btnExport">⬇ Download ke Excel</button>
     </div>
   </div>
 
@@ -131,6 +133,7 @@
 const $ = id => document.getElementById(id);
 let RAW = null;      // {cicoWO, cicoP0, detWO, detP0, slaWO, slaP0, koef}
 let COMP = null;     // {wo:[], p0:[]}
+let LAST = {wo:[], p0:[], cols:{}}; // hasil filter terakhir, untuk export
 
 function csvUrl(id, sheet){
   return `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheet)}`;
@@ -290,24 +293,47 @@ function applyFiltersAndRender(){
   $('cntWO').textContent = wo.length + ' baris';
   $('cntP0').textContent = p0.length + ' baris';
 
-  renderTable('tblWO', wo, [
+  const colsWO = [
     ['No Laporan','noLaporan'],['ID Petugas','petugas'],['Area Ptgs','area'],['Rayon Ptgs','rayon'],
     ['SLA WO (a)','sla'],['Dispatch Time (b)','dispatch'],['Travel Time (c)','travel'],['Fixing Time','fixing'],
     ['Koefisien WO (d)','koefWO'],['RCT (e)','rct'],['Durasi Penugasan (f)','durasi'],
     ['Performance Penugasan (g)','perfTugas'],['Rating','rating'],['Koefisien Rating (h)','koefRating'],
     ['Koefisien Unit (i)','koefUnit'],['Koef Lapor Ulang (j)','koefLaporUlang'],['Koef Skipped Step (k)','koefSkip'],
     ['Koef Pengurang (l)','koefPengurang'],['Performance WO (m)','performa']
-  ]);
-  renderTable('tblP0', p0, [
+  ];
+  const colsP0 = [
     ['No Penugasan Khusus','noPenugasan'],['ID Petugas','petugas'],['Area Ptgs','area'],['Rayon Ptgs','rayon'],
     ['SLA P0 (a)','sla'],['Dispatch Time (b)','dispatch'],['Travel Time (c)','travel'],['Koefisien P0 (d)','koefP0'],
     ['RCT (e)','rct'],['Durasi Penugasan (f)','durasi'],['Performance Penugasan (g)','perfTugas'],
     ['Koefisien Unit (h)','koefUnit'],['Performance P0 (i)','performa']
-  ]);
+  ];
+  renderTable('tblWO', wo, colsWO);
+  renderTable('tblP0', p0, colsP0);
+  LAST = {wo, p0, colsWO, colsP0, summary:{
+    'Jumlah WO':wo.length,'Jumlah P0':p0.length,
+    'Total Performa WO': +sumWO.toFixed(2), 'Total Performa P0': +sumP0.toFixed(2),
+    'Total RCT (jam)': +rctH.toFixed(2), 'Rata-rata Jam Kerja/Hari': +avg.toFixed(2)
+  }};
+}
+
+function exportToExcel(){
+  if(!LAST.wo.length && !LAST.p0.length){ alert('Belum ada data untuk diekspor. Muat data & terapkan filter dulu.'); return; }
+  const toRows = (arr, cols) => arr.map(r => {
+    const o = {};
+    cols.forEach(c => { const v = r[c[1]]; o[c[0]] = (typeof v === 'number') ? +v.toFixed(2) : (v ?? ''); });
+    return o;
+  });
+  const wb = XLSX.utils.book_new();
+  const sumRows = Object.entries(LAST.summary || {}).map(([k,v])=>({Keterangan:k, Nilai:v}));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(sumRows), 'Ringkasan');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(toRows(LAST.wo, LAST.colsWO)), 'Daftar WO');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(toRows(LAST.p0, LAST.colsP0)), 'Daftar P0');
+  const stamp = new Date().toISOString().slice(0,19).replace(/[:T]/g,'-');
+  XLSX.writeFile(wb, `Rekap-CICO-Petugas-${stamp}.xlsx`);
 }
 function fmt(v){
   if(v===null||v===undefined||v==='') return '';
-  if(typeof v==='number') return Number.isInteger(v)? v : v.toFixed(3);
+  if(typeof v==='number') return v.toFixed(2);
   return v;
 }
 function renderTable(tblId, rows, cols){
@@ -324,6 +350,7 @@ $('btnReset').addEventListener('click', ()=>{
   $('fUp3').value=''; $('fUlp').value=''; $('fPetugas').value='';
   if(COMP){ populateFilterOptions(); applyFiltersAndRender(); }
 });
+$('btnExport').addEventListener('click', exportToExcel);
 $('fUp3').addEventListener('change', ()=>{ updateUlpOptions(); updatePetugasOptions(); });
 $('fUlp').addEventListener('change', updatePetugasOptions);
 </script>
