@@ -3,356 +3,287 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Rekap CICO per Petugas — WO & P0 (Performance)</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<title>Dashboard Performa Yantek - CICO WO & P0</title>
 <style>
-  :root{
-    --bg:#f4f6f9; --card:#ffffff; --border:#e2e6ed; --text:#1f2937; --muted:#6b7280;
-    --brand:#0f6cbd; --brand-dark:#0a4f8f; --good:#0f9d58; --warn:#e8710a; --head:#eef2f7;
-  }
-  *{box-sizing:border-box;}
-  body{margin:0;font-family:Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text);}
-  header{background:linear-gradient(120deg,var(--brand-dark),var(--brand));color:#fff;padding:18px 24px;}
-  header h1{margin:0;font-size:20px;}
-  header p{margin:4px 0 0;font-size:13px;opacity:.9;}
-  .wrap{max-width:1400px;margin:0 auto;padding:18px 24px 60px;}
-  .card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 18px;margin-bottom:18px;}
-  .card h2{font-size:15px;margin:0 0 12px;color:var(--brand-dark);}
-  details.card{padding:0;}
-  details.card > summary{cursor:pointer;padding:14px 18px;font-weight:600;color:var(--brand-dark);list-style:none;}
-  details.card > summary::-webkit-details-marker{display:none;}
-  details.card > summary::before{content:'▶ ';font-size:11px;}
-  details.card[open] > summary::before{content:'▼ ';}
-  details.card > .inner{padding:0 18px 16px;}
-  .grid{display:grid;gap:12px;}
-  .grid-cfg{grid-template-columns:repeat(4,1fr);}
-  .grid-filter{grid-template-columns:repeat(5,1fr);align-items:end;}
-  .grid-sum{grid-template-columns:repeat(6,1fr);}
-  label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px;}
-  input,select{width:100%;padding:7px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:#fff;}
-  button{cursor:pointer;border:none;border-radius:6px;padding:9px 16px;font-size:13px;font-weight:600;}
-  .btn-primary{background:var(--brand);color:#fff;}
-  .btn-primary:hover{background:var(--brand-dark);}
-  .btn-secondary{background:var(--head);color:var(--text);border:1px solid var(--border);}
-  .btn-row{display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;align-items:center;}
-  .stat{background:var(--head);border-radius:8px;padding:10px 12px;}
-  .stat .lbl{font-size:11px;color:var(--muted);}
-  .stat .val{font-size:19px;font-weight:700;color:var(--brand-dark);margin-top:2px;}
-  table{border-collapse:collapse;width:100%;font-size:12px;}
-  th,td{border:1px solid var(--border);padding:6px 7px;text-align:left;white-space:nowrap;}
-  th{background:var(--head);position:sticky;top:0;font-size:11px;}
-  tbody tr:nth-child(even){background:#fafbfc;}
-  .tbl-scroll{overflow:auto;max-height:520px;border:1px solid var(--border);border-radius:8px;}
-  .status{font-size:12px;color:var(--muted);margin-top:8px;min-height:16px;}
-  .status.err{color:#c0392b;font-weight:600;}
-  .status.ok{color:var(--good);font-weight:600;}
-  .note{font-size:11px;color:var(--muted);margin-top:10px;line-height:1.5;}
-  .tag{display:inline-block;background:#e6f0fa;color:var(--brand-dark);border-radius:4px;padding:1px 6px;font-size:11px;margin-left:6px;}
+:root{--bg:#0f172a;--card:#1e293b;--card2:#162033;--accent:#3b82f6;--text:#e2e8f0;--muted:#94a3b8;--border:#334155;--good:#22c55e;--warn:#f59e0b;--bad:#ef4444}
+*{box-sizing:border-box}
+body{margin:0;font-family:Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text)}
+header{padding:16px 24px;background:var(--card2);border-bottom:1px solid var(--border)}
+h1{font-size:18px;margin:0}
+.sub{color:var(--muted);font-size:12px;margin-top:2px}
+.wrap{padding:16px 24px;max-width:1400px;margin:0 auto}
+.panel{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:16px}
+.filters{display:flex;flex-wrap:wrap;gap:10px;align-items:end}
+.f{display:flex;flex-direction:column;gap:4px;min-width:170px}
+label{font-size:11px;color:var(--muted)}
+select,input,button{background:#0f172a;border:1px solid var(--border);color:var(--text);padding:7px 8px;border-radius:6px;font-size:13px}
+button{background:var(--accent);border:none;cursor:pointer;font-weight:600}
+button.secondary{background:#334155}
+button:hover{opacity:.9}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:16px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px}
+.card .v{font-size:22px;font-weight:700}
+.card .l{font-size:11px;color:var(--muted);margin-top:2px}
+.tabs{display:flex;gap:4px;margin-bottom:8px}
+.tab{padding:8px 14px;border-radius:8px 8px 0 0;cursor:pointer;background:var(--card2);color:var(--muted);font-size:13px}
+.tab.active{background:var(--card);color:var(--text);font-weight:600}
+.tablewrap{overflow:auto;max-height:520px;border:1px solid var(--border);border-radius:0 8px 8px 8px}
+table{border-collapse:collapse;width:100%;font-size:12px;white-space:nowrap}
+th,td{padding:6px 8px;border-bottom:1px solid var(--border);text-align:left}
+th{position:sticky;top:0;background:var(--card2);z-index:1}
+tr:hover{background:#25324a}
+.toolbar{display:flex;justify-content:space-between;align-items:center;margin:8px 0;gap:8px;flex-wrap:wrap}
+.status{color:var(--muted);font-size:12px}
+.err{color:var(--bad)}
+.pg{display:flex;gap:6px;align-items:center}
+.hide{display:none}
 </style>
 </head>
 <body>
 <header>
-  <h1>REKAP CICO PER PETUGAS — WO & P0 (PERFORMANCE)</h1>
-  <p>Dashboard performa petugas berdasarkan data live dari Google Sheets (bukan dari file Excel referensi)</p>
+<h1>Dashboard Performa Yantek — CICO WO &amp; Penugasan Khusus (P0)</h1>
+<div class="sub">Sumber data: Google Spreadsheet (live) — CICO WO, CICO P0, detail WO, detail P0, SLA WO, SLA P0, koef unit</div>
 </header>
-
 <div class="wrap">
+  <div class="panel">
+    <div class="filters">
+      <div class="f"><label>UP3</label><select id="fUP3"><option value="">Semua UP3</option></select></div>
+      <div class="f"><label>ULP</label><select id="fULP"><option value="">Semua ULP</option></select></div>
+      <div class="f"><label>Nama Petugas</label><select id="fPet"><option value="">Semua Petugas</option></select></div>
+      <div class="f"><label>Tanggal Awal</label><input type="date" id="fStart"></div>
+      <div class="f"><label>Tanggal Akhir</label><input type="date" id="fEnd"></div>
+      <div class="f"><button id="btnApply">Terapkan Filter</button></div>
+      <div class="f"><button id="btnReload" class="secondary">Muat Ulang Data</button></div>
+    </div>
+    <div class="status" id="status">Memuat data dari Google Sheets...</div>
+  </div>
 
-  <details class="card" id="cfgCard">
-    <summary>Sumber Data (Google Sheets) — atur nama sheet jika berbeda</summary>
-    <div class="inner">
-      <div class="grid grid-cfg">
-        <div style="grid-column:span 2;">
-          <label>ID Spreadsheet Google Sheets</label>
-          <input id="cfgId" value="1RTPWaXQDqz_bYK67Mwc-flXNK_wMtLQKS18Gf1oL-Pg">
-        </div>
-        <div><label>Nama sheet: CICO WO</label><input id="cfgCicoWO" value="Cico WO"></div>
-        <div><label>Nama sheet: CICO P0</label><input id="cfgCicoP0" value="Cico P0"></div>
-        <div><label>Nama sheet: Detail WO</label><input id="cfgDetWO" value="Detail WO"></div>
-        <div><label>Nama sheet: Detail P0</label><input id="cfgDetP0" value="Detail p0"></div>
-        <div><label>Nama sheet: SLA WO</label><input id="cfgSlaWO" value="SLA WO"></div>
-        <div><label>Nama sheet: SLA P0</label><input id="cfgSlaP0" value="SA p0"></div>
-        <div><label>Nama sheet: Koefisien Unit</label><input id="cfgKoef" value="kofisien unit"></div>
+  <div class="cards" id="cards"></div>
+
+  <div class="tabs">
+    <div class="tab active" data-t="wo">Daftar WO</div>
+    <div class="tab" data-t="p0">Daftar P0 (Penugasan Khusus)</div>
+  </div>
+
+  <div class="panel">
+    <div class="toolbar">
+      <input type="text" id="search" placeholder="Cari no laporan / nama petugas..." style="min-width:260px">
+      <div class="pg">
+        <button class="secondary" id="prevPg">‹ Prev</button>
+        <span class="status" id="pgInfo"></span>
+        <button class="secondary" id="nextPg">Next ›</button>
       </div>
-      <div class="btn-row">
-        <button class="btn-primary" id="btnLoad">Muat / Refresh Data</button>
-        <span class="status" id="status">Sheet harus dapat diakses "Siapa saja yang memiliki link → Dapat melihat".</span>
-      </div>
-      <p class="note">
-        Rumus mengikuti logika Sheet "Petugas" (Dashboard) pada file Excel referensi: WO dicocokkan lewat No Laporan
-        (CICO WO → Detail WO), SLA WO dicocokkan lewat Fasilitas|Subfasilitas|Peralatan, dan Koefisien Unit dicocokkan
-        lewat Nama UP3. P0 dicocokkan lewat No Penugasan Khusus (CICO P0 → Detail P0), SLA P0 dicocokkan lewat Jenis
-        Penugasan, dan Koefisien Unit dicocokkan lewat Area Petugas. Tidak ada data dari file Excel yang digunakan —
-        seluruh data diambil langsung dari spreadsheet di atas.
-      </p>
     </div>
-  </details>
-
-  <div class="card">
-    <h2>Filter</h2>
-    <div class="grid grid-filter">
-      <div><label>UP3</label><select id="fUp3"><option value="">(Semua)</option></select></div>
-      <div><label>ULP</label><select id="fUlp"><option value="">(Semua)</option></select></div>
-      <div><label>Nama Petugas</label><select id="fPetugas"><option value="">(Semua)</option></select></div>
-      <div><label>Tanggal Awal</label><input type="date" id="fStart"></div>
-      <div><label>Tanggal Akhir</label><input type="date" id="fEnd"></div>
-    </div>
-    <div class="btn-row">
-      <button class="btn-primary" id="btnApply">Terapkan Filter</button>
-      <button class="btn-secondary" id="btnReset">Reset Filter</button>
-      <button class="btn-secondary" id="btnExport">⬇ Download ke Excel</button>
-    </div>
+    <div class="tablewrap"><table><thead><tr id="thWO"></tr></thead><tbody id="tbWO"></tbody></table></div>
+    <div class="tablewrap hide" id="wrapP0"><table><thead><tr id="thP0"></tr></thead><tbody id="tbP0"></tbody></table></div>
   </div>
-
-  <div class="card">
-    <h2>Ringkasan</h2>
-    <div class="grid grid-sum">
-      <div class="stat"><div class="lbl">Jumlah WO</div><div class="val" id="sJmlWO">0</div></div>
-      <div class="stat"><div class="lbl">Jumlah P0</div><div class="val" id="sJmlP0">0</div></div>
-      <div class="stat"><div class="lbl">Total Performa WO</div><div class="val" id="sPerfWO">0</div></div>
-      <div class="stat"><div class="lbl">Total Performa P0</div><div class="val" id="sPerfP0">0</div></div>
-      <div class="stat"><div class="lbl">Total RCT (jam)</div><div class="val" id="sRct">0</div></div>
-      <div class="stat"><div class="lbl">Rata-rata Jam Kerja/Hari</div><div class="val" id="sAvg">0</div></div>
-    </div>
-  </div>
-
-  <div class="card">
-    <h2>Daftar WO <span class="tag" id="cntWO">0 baris</span></h2>
-    <div class="tbl-scroll"><table id="tblWO"><thead></thead><tbody></tbody></table></div>
-  </div>
-
-  <div class="card">
-    <h2>Daftar P0 (Penugasan Khusus) <span class="tag" id="cntP0">0 baris</span></h2>
-    <div class="tbl-scroll"><table id="tblP0"><thead></thead><tbody></tbody></table></div>
-  </div>
-
 </div>
 
 <script>
-const $ = id => document.getElementById(id);
-let RAW = null;      // {cicoWO, cicoP0, detWO, detP0, slaWO, slaP0, koef}
-let COMP = null;     // {wo:[], p0:[]}
-let LAST = {wo:[], p0:[], cols:{}}; // hasil filter terakhir, untuk export
+const SS_ID='1RTPWaXQDqz_bYK67Mwc-flXNK_wMtLQKS18Gf1oL-Pg';
+const SHEETS=['CICO WO','CICO P0','detail WO','detail P0','SLA WO','SLA P0','koef unit'];
+const D={}; const IDX={};
+let woRows=[], p0Rows=[], curTab='wo', page=0, perPage=100;
 
-function csvUrl(id, sheet){
-  return `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheet)}`;
+function csvUrl(name){return `https://docs.google.com/spreadsheets/d/${SS_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(name)}`;}
+
+function parseCSV(text){
+  const rows=[];let row=[],f='',q=false;
+  for(let i=0;i<text.length;i++){const c=text[i];
+    if(q){if(c=='"'){if(text[i+1]=='"'){f+='"';i++;}else q=false;}else f+=c;}
+    else{if(c=='"')q=true;else if(c==','){row.push(f);f='';}else if(c=='\n'){row.push(f);rows.push(row);row=[];f='';}else if(c!='\r')f+=c;}
+  }
+  if(f.length||row.length){row.push(f);rows.push(row);}
+  return rows;
 }
-function fetchSheet(id, sheet){
-  return fetch(csvUrl(id, sheet)).then(r=>{
-    if(!r.ok) throw new Error(`Gagal mengambil sheet "${sheet}" (HTTP ${r.status})`);
-    return r.text();
-  }).then(txt=>{
-    if(/^\s*<HTML|^\s*<!DOCTYPE/i.test(txt)) throw new Error(`Sheet "${sheet}" tidak ditemukan / tidak publik`);
-    const parsed = Papa.parse(txt, {header:true, skipEmptyLines:true});
-    return parsed.data.map(row=>{
-      const o={};
-      Object.keys(row).forEach(k=> o[k.trim()] = (row[k]===undefined||row[k]===null) ? '' : String(row[k]).trim());
-      return o;
-    });
-  });
+function toObjs(rows){
+  const h=rows[0]||[];
+  return rows.slice(1).filter(r=>r.some(v=>v!=='')).map(r=>{const o={};h.forEach((k,i)=>o[k]=(r[i]??'').trim());return o;});
 }
-function num(v){ if(v===undefined||v===null||v==='') return null; const n=parseFloat(String(v).replace(/,/g,'')); return isNaN(n)?null:n; }
-function stripPosko(s){ return (s||'').replace(/^POSKO\s+/i,'').trim(); }
-function parseDT(str){
-  if(!str) return null;
-  str = str.trim();
-  let d = new Date(str.replace(' ','T'));
-  if(!isNaN(d)) return d;
-  let m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/);
-  if(m) return new Date(+m[3], +m[2]-1, +m[1], +(m[4]||0), +(m[5]||0), +(m[6]||0));
+function num(v){
+  if(v==null)return 0; v=String(v).trim(); if(v==='')return 0;
+  if(v.includes(',')&&v.includes('.'))v=v.replace(/\./g,'').replace(',','.');
+  else if(v.includes(','))v=v.replace(',','.');
+  const n=parseFloat(v); return isNaN(n)?0:n;
+}
+function parseDate(v){
+  if(!v)return null; v=String(v).trim(); if(!v)return null;
+  let m=v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if(m)return new Date(+m[3],+m[2]-1,+m[1]);
+  const n=Number(v);
+  if(v!==''&&!isNaN(n)&&n>1000)return new Date(Date.UTC(1899,11,30)+n*86400000);
   return null;
 }
-function dayKey(d){ return d? d.toISOString().slice(0,10) : null; }
+function dkey(d){return d?d.toISOString().slice(0,10):null;}
+function stripPosko(s){return (s||'').replace(/^POSKO\s*/i,'').trim();}
+function fmt(n){return typeof n==='number'?(Math.round(n*100)/100).toLocaleString('id-ID',{minimumFractionDigits:2,maximumFractionDigits:2}):n||'';}
+
+async function fetchSheet(name){
+  const res=await fetch(csvUrl(name));
+  if(!res.ok)throw new Error('Gagal ambil sheet "'+name+'" (pastikan share: Anyone with link - Viewer)');
+  return toObjs(parseCSV(await res.text()));
+}
 
 async function loadAll(){
-  const id = $('cfgId').value.trim();
-  const names = {
-    cicoWO: $('cfgCicoWO').value.trim(), cicoP0: $('cfgCicoP0').value.trim(),
-    detWO: $('cfgDetWO').value.trim(), detP0: $('cfgDetP0').value.trim(),
-    slaWO: $('cfgSlaWO').value.trim(), slaP0: $('cfgSlaP0').value.trim(), koef: $('cfgKoef').value.trim()
-  };
-  $('status').textContent = 'Memuat 7 sheet...'; $('status').className='status';
+  document.getElementById('status').textContent='Memuat data dari Google Sheets...';
+  document.getElementById('status').classList.remove('err');
   try{
-    const [cicoWO,cicoP0,detWO,detP0,slaWO,slaP0,koef] = await Promise.all(
-      Object.values(names).map(n=>fetchSheet(id,n))
-    );
-    RAW = {cicoWO,cicoP0,detWO,detP0,slaWO,slaP0,koef};
-    $('status').textContent = `Berhasil: CICO WO ${cicoWO.length}, CICO P0 ${cicoP0.length}, Detail WO ${detWO.length}, Detail P0 ${detP0.length}, SLA WO ${slaWO.length}, SLA P0 ${slaP0.length}, Koef Unit ${koef.length} baris.`;
-    $('status').className='status ok';
+    const [cicoWO,cicoP0,detWO,detP0,slaWO,slaP0,koefU]=await Promise.all(SHEETS.map(fetchSheet));
+    Object.assign(D,{cicoWO,cicoP0,detWO,detP0,slaWO,slaP0,koefU});
+    buildIndices();
     compute();
-    populateFilterOptions();
-    applyFiltersAndRender();
+    buildFilterOptions();
+    applyFilters();
+    document.getElementById('status').textContent='Data dimuat: '+cicoWO.length+' WO, '+cicoP0.length+' P0. Terakhir dimuat '+new Date().toLocaleTimeString('id-ID');
   }catch(e){
-    $('status').textContent = 'Gagal memuat data: ' + e.message + ' — cek nama sheet & akses berbagi.';
-    $('status').className='status err';
-    console.error(e);
+    document.getElementById('status').textContent='Error: '+e.message;
+    document.getElementById('status').classList.add('err');
   }
+}
+
+function buildIndices(){
+  IDX.detWO=new Map(D.detWO.map(r=>[r.NO_LAPORAN,r]));
+  IDX.detP0=new Map(D.detP0.map(r=>[r.NO_PENUGASAN_KHUSUS,r]));
+  IDX.slaWO=new Map(D.slaWO.map(r=>[[r['Fasilitas Id'],r['Subfasilitas Id'],r['Equipment Id']].join('|'),r]));
+  IDX.slaP0=new Map(D.slaP0.map(r=>[r['Jenis Pekerjaan'],r]));
+  IDX.koefU=new Map(D.koefU.map(r=>[r['Nama Up3'],num(r['Koefisien Unit'])]));
 }
 
 function compute(){
-  const detWOByNo = new Map(RAW.detWO.map(r=>[r['NO_LAPORAN'], r]));
-  const slaWOByKey = new Map(RAW.slaWO.map(r=>[`${r['Fasilitas Id']}|${r['Subfasilitas Id']}|${r['Equipment Id']}`, r]));
-  const koefByUp3 = new Map(RAW.koef.map(r=>[r['Nama Up3'], num(r['Koefisien Unit'])]));
-  const detP0ByNo = new Map(RAW.detP0.map(r=>[r['NO_PENUGASAN_KHUSUS'], r]));
-  const slaP0ByJenis = new Map(RAW.slaP0.map(r=>[r['Jenis Pekerjaan'], r]));
-
-  const wo = RAW.cicoWO.map(c=>{
-    const noLap = c['No Laporan'];
-    const d = detWOByNo.get(noLap) || {};
-    const key = `${d['ID_FASILITAS']}|${d['ID_SUB_FASILITAS']}|${d['ID_EQUIPMENT']}`;
-    const sla = slaWOByKey.get(key) || {};
-    const a = num(sla['SLA']), koefWO = num(sla['Koefisien']);
-    const b = num(d['DISPATCH_TIME']), c_ = num(d['TRAVEL_TIME']), fixing = num(d['FIXING_TIME']);
-    const e = num(d['RCT']), rating = num(d['RATING']);
-    const koefUnit = koefByUp3.get(d['NAMA_UP3']);
-    const f = (e!=null && b!=null && c_!=null) ? (e-(b+c_)) : null;
-    const g = (a!=null && f) ? Math.min(a/f, 1.5) : null;
-    const h = rating===5 ? 1.1 : 1;
-    const j=1,k=1,l=1;
-    const m = (koefWO!=null && g!=null && koefUnit!=null) ? (koefWO*g*h*koefUnit*l) : null;
-    const dt = parseDT(c['Tgl Pengerjaan']) || parseDT(c['Check In Petugas']);
-    return {
-      up3:c['UP3'], ulp:stripPosko(c['Posko']), petugas:c['Nama Petugas'], date:dt, dateKey:dayKey(dt),
-      noLaporan:noLap, area:d['NAMA_UP3']||'', rayon:stripPosko(d['NAMA_POSKO']||''),
-      sla:a, dispatch:b, travel:c_, fixing, koefWO, rct:e, durasi:f, perfTugas:g, rating,
-      koefRating:h, koefUnit, koefLaporUlang:j, koefSkip:k, koefPengurang:l, performa:m
-    };
-  }).filter(r=>r.petugas);
-
-  const p0 = RAW.cicoP0.map(c=>{
-    const noTugas = c['No Tugas'];
-    const d = detP0ByNo.get(noTugas) || {};
-    const sla = slaP0ByJenis.get(d['JENIS_PENUGASAN']) || {};
-    const a = num(sla['RCT']), koefP0 = num(sla['Koefisien']);
-    const b = num(d['DISPATCH_TIME']), c_ = num(d['TRAVEL_TIME']);
-    const e = num(d['DURASI_PENUGASAN_KHUSUS']);
-    const koefUnit = koefByUp3.get(d['AREA_PTGS']);
-    const f = (e!=null && b!=null && c_!=null) ? (e-(b+c_)) : null;
-    const g = (a!=null && f) ? Math.min(a/f, 1.5) : null;
-    const i = (koefP0!=null && g!=null && koefUnit!=null) ? (koefP0*g*koefUnit) : null;
-    const dt = parseDT(c['Tgl Pengerjaan']) || parseDT(c['Check In Petugas']);
-    return {
-      up3:c['UP3'], ulp:stripPosko(c['Posko']), petugas:c['Personil Yantek'], date:dt, dateKey:dayKey(dt),
-      noPenugasan:noTugas, area:d['AREA_PTGS']||'', rayon:d['RAYON_PTGS']||'',
-      sla:a, dispatch:b, travel:c_, koefP0, rct:e, durasi:f, perfTugas:g, koefUnit, performa:i
-    };
-  }).filter(r=>r.petugas);
-
-  COMP = {wo, p0};
-}
-
-function populateFilterOptions(){
-  const all = [...COMP.wo, ...COMP.p0];
-  const up3s = [...new Set(all.map(r=>r.up3).filter(Boolean))].sort();
-  fillSelect('fUp3', up3s);
-  updateUlpOptions(); updatePetugasOptions();
-  const dates = all.map(r=>r.date).filter(Boolean);
-  if(dates.length){
-    const min = new Date(Math.min(...dates)), max = new Date(Math.max(...dates));
-    $('fStart').value = dayKey(min); $('fEnd').value = dayKey(max);
-  }
-}
-function fillSelect(id, arr, keep){
-  const sel = $(id); const cur = keep!==undefined?keep:sel.value;
-  sel.innerHTML = '<option value="">(Semua)</option>' + arr.map(v=>`<option value="${v}">${v}</option>`).join('');
-  if(arr.includes(cur)) sel.value = cur;
-}
-function updateUlpOptions(){
-  const up3 = $('fUp3').value;
-  const all = [...COMP.wo, ...COMP.p0].filter(r=> !up3 || r.up3===up3);
-  fillSelect('fUlp', [...new Set(all.map(r=>r.ulp).filter(Boolean))].sort());
-}
-function updatePetugasOptions(){
-  const up3 = $('fUp3').value, ulp = $('fUlp').value;
-  const all = [...COMP.wo, ...COMP.p0].filter(r=> (!up3||r.up3===up3) && (!ulp||r.ulp===ulp));
-  fillSelect('fPetugas', [...new Set(all.map(r=>r.petugas).filter(Boolean))].sort());
-}
-
-function applyFiltersAndRender(){
-  if(!COMP) return;
-  const up3=$('fUp3').value, ulp=$('fUlp').value, pet=$('fPetugas').value;
-  const start = $('fStart').value ? new Date($('fStart').value+'T00:00:00') : null;
-  const end = $('fEnd').value ? new Date($('fEnd').value+'T23:59:59') : null;
-  const match = r => (!up3||r.up3===up3) && (!ulp||r.ulp===ulp) && (!pet||r.petugas===pet)
-                      && (!start||!r.date||r.date>=start) && (!end||!r.date||r.date<=end);
-  const wo = COMP.wo.filter(match), p0 = COMP.p0.filter(match);
-
-  const sumWO = wo.reduce((s,r)=>s+(r.performa||0),0);
-  const sumP0 = p0.reduce((s,r)=>s+(r.performa||0),0);
-  const rctH = (wo.reduce((s,r)=>s+(r.rct||0),0) + p0.reduce((s,r)=>s+(r.rct||0),0))/60;
-  const days = new Set([...wo,...p0].map(r=>r.dateKey).filter(Boolean)).size;
-  const avg = days? rctH/days : 0;
-
-  $('sJmlWO').textContent = wo.length;
-  $('sJmlP0').textContent = p0.length;
-  $('sPerfWO').textContent = sumWO.toFixed(2);
-  $('sPerfP0').textContent = sumP0.toFixed(2);
-  $('sRct').textContent = rctH.toFixed(2);
-  $('sAvg').textContent = avg.toFixed(2);
-  $('cntWO').textContent = wo.length + ' baris';
-  $('cntP0').textContent = p0.length + ' baris';
-
-  const colsWO = [
-    ['No Laporan','noLaporan'],['ID Petugas','petugas'],['Area Ptgs','area'],['Rayon Ptgs','rayon'],
-    ['SLA WO (a)','sla'],['Dispatch Time (b)','dispatch'],['Travel Time (c)','travel'],['Fixing Time','fixing'],
-    ['Koefisien WO (d)','koefWO'],['RCT (e)','rct'],['Durasi Penugasan (f)','durasi'],
-    ['Performance Penugasan (g)','perfTugas'],['Rating','rating'],['Koefisien Rating (h)','koefRating'],
-    ['Koefisien Unit (i)','koefUnit'],['Koef Lapor Ulang (j)','koefLaporUlang'],['Koef Skipped Step (k)','koefSkip'],
-    ['Koef Pengurang (l)','koefPengurang'],['Performance WO (m)','performa']
-  ];
-  const colsP0 = [
-    ['No Penugasan Khusus','noPenugasan'],['ID Petugas','petugas'],['Area Ptgs','area'],['Rayon Ptgs','rayon'],
-    ['SLA P0 (a)','sla'],['Dispatch Time (b)','dispatch'],['Travel Time (c)','travel'],['Koefisien P0 (d)','koefP0'],
-    ['RCT (e)','rct'],['Durasi Penugasan (f)','durasi'],['Performance Penugasan (g)','perfTugas'],
-    ['Koefisien Unit (h)','koefUnit'],['Performance P0 (i)','performa']
-  ];
-  renderTable('tblWO', wo, colsWO);
-  renderTable('tblP0', p0, colsP0);
-  LAST = {wo, p0, colsWO, colsP0, summary:{
-    'Jumlah WO':wo.length,'Jumlah P0':p0.length,
-    'Total Performa WO': +sumWO.toFixed(2), 'Total Performa P0': +sumP0.toFixed(2),
-    'Total RCT (jam)': +rctH.toFixed(2), 'Rata-rata Jam Kerja/Hari': +avg.toFixed(2)
-  }};
-}
-
-function exportToExcel(){
-  if(!LAST.wo.length && !LAST.p0.length){ alert('Belum ada data untuk diekspor. Muat data & terapkan filter dulu.'); return; }
-  const toRows = (arr, cols) => arr.map(r => {
-    const o = {};
-    cols.forEach(c => { const v = r[c[1]]; o[c[0]] = (typeof v === 'number') ? +v.toFixed(2) : (v ?? ''); });
-    return o;
+  woRows=D.cicoWO.map(r=>{
+    const noLap=r['No Laporan'];
+    const det=IDX.detWO.get(noLap);
+    const tgl=parseDate(r['Tgl Pengerjaan'])||parseDate(r['Tgl Lapor']);
+    const up3=r['UP3'], ulp=stripPosko(r['Posko']);
+    const base={noLap, petugas:r['Nama Petugas'], up3, ulp, tgl};
+    if(!det)return {...base, valid:false};
+    const key=[det.ID_FASILITAS,det.ID_SUB_FASILITAS,det.ID_EQUIPMENT].join('|');
+    const sla=IDX.slaWO.get(key);
+    const a=sla?num(sla.SLA):0, d=sla?num(sla.Koefisien):0;
+    const b=num(det.DISPATCH_TIME), c=num(det.TRAVEL_TIME), fix=num(det.FIXING_TIME), e=num(det.RCT);
+    const f=e-(b+c); const g=f>0?Math.min(a/f,1.5):0;
+    const rating=num(det.RATING); const h=rating===5?1.1:1;
+    const i=IDX.koefU.get(det.NAMA_UP3)||0; const m=d*g*h*i;
+    return {...base, area:det.NAMA_UP3, rayon:stripPosko(det.NAMA_POSKO), a,b,c,fix,d,e,f,g,rating,h,i,m, valid:true};
   });
-  const wb = XLSX.utils.book_new();
-  const sumRows = Object.entries(LAST.summary || {}).map(([k,v])=>({Keterangan:k, Nilai:v}));
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(sumRows), 'Ringkasan');
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(toRows(LAST.wo, LAST.colsWO)), 'Daftar WO');
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(toRows(LAST.p0, LAST.colsP0)), 'Daftar P0');
-  const stamp = new Date().toISOString().slice(0,19).replace(/[:T]/g,'-');
-  XLSX.writeFile(wb, `Rekap-CICO-Petugas-${stamp}.xlsx`);
-}
-function fmt(v){
-  if(v===null||v===undefined||v==='') return '';
-  if(typeof v==='number') return v.toFixed(2);
-  return v;
-}
-function renderTable(tblId, rows, cols){
-  const tbl = $(tblId);
-  tbl.querySelector('thead').innerHTML = '<tr>'+cols.map(c=>`<th>${c[0]}</th>`).join('')+'</tr>';
-  tbl.querySelector('tbody').innerHTML = rows.map(r=>
-    '<tr>'+cols.map(c=>`<td>${fmt(r[c[1]])}</td>`).join('')+'</tr>'
-  ).join('') || `<tr><td colspan="${cols.length}" style="color:#9aa3ad">Tidak ada data untuk filter ini.</td></tr>`;
+  p0Rows=D.cicoP0.map(r=>{
+    const noTgs=r['No Tugas'];
+    const det=IDX.detP0.get(noTgs);
+    const tgl=parseDate(r['Tgl Pengerjaan'])||parseDate(r['Tgl Catat']);
+    const up3=r['UP3'], ulp=stripPosko(r['Posko']);
+    const base={noTgs, petugas:r['Personil Yantek'], up3, ulp, tgl};
+    if(!det)return {...base, valid:false};
+    const sla=IDX.slaP0.get(det.JENIS_PENUGASAN);
+    const a=sla?num(sla.RCT):0, d=sla?num(sla.Koefisien):0;
+    const b=num(det.DISPATCH_TIME), c=num(det.TRAVEL_TIME), e=num(det.DURASI_PENUGASAN_KHUSUS);
+    const f=e-(b+c); const g=f>0?Math.min(a/f,1.5):0;
+    const h=IDX.koefU.get(det.AREA_PTGS)||0; const i=d*g*h;
+    return {...base, area:det.AREA_PTGS, rayon:det.RAYON_PTGS, a,b,c,d,e,f,g,h,i, valid:true};
+  });
 }
 
-$('btnLoad').addEventListener('click', loadAll);
-$('btnApply').addEventListener('click', applyFiltersAndRender);
-$('btnReset').addEventListener('click', ()=>{
-  $('fUp3').value=''; $('fUlp').value=''; $('fPetugas').value='';
-  if(COMP){ populateFilterOptions(); applyFiltersAndRender(); }
-});
-$('btnExport').addEventListener('click', exportToExcel);
-$('fUp3').addEventListener('change', ()=>{ updateUlpOptions(); updatePetugasOptions(); });
-$('fUlp').addEventListener('change', updatePetugasOptions);
+function buildFilterOptions(){
+  const up3s=new Set(), ulps=new Set(), pets=new Set();
+  [...D.cicoWO,...D.cicoP0].forEach(r=>{
+    if(r.UP3)up3s.add(r.UP3);
+    if(r.Posko)ulps.add(stripPosko(r.Posko));
+  });
+  D.cicoWO.forEach(r=>r['Nama Petugas']&&pets.add(r['Nama Petugas']));
+  D.cicoP0.forEach(r=>r['Personil Yantek']&&pets.add(r['Personil Yantek']));
+  fillSelect('fUP3',[...up3s].sort());
+  fillSelect('fULP',[...ulps].sort());
+  fillSelect('fPet',[...pets].sort());
+}
+function fillSelect(id,arr){
+  const sel=document.getElementById(id); const cur=sel.value;
+  sel.innerHTML='<option value="">Semua</option>'+arr.map(v=>`<option value="${v.replace(/"/g,'&quot;')}">${v}</option>`).join('');
+  if(arr.includes(cur))sel.value=cur;
+}
+
+function currentFilters(){
+  return {
+    up3:document.getElementById('fUP3').value,
+    ulp:document.getElementById('fULP').value,
+    pet:document.getElementById('fPet').value,
+    start:document.getElementById('fStart').value?new Date(document.getElementById('fStart').value):null,
+    end:document.getElementById('fEnd').value?new Date(document.getElementById('fEnd').value):null,
+    q:document.getElementById('search').value.trim().toLowerCase()
+  };
+}
+function matchRow(r,ff){
+  if(ff.up3&&r.up3!==ff.up3)return false;
+  if(ff.ulp&&r.ulp!==ff.ulp)return false;
+  if(ff.pet&&r.petugas!==ff.pet)return false;
+  if(ff.start&&(!r.tgl||r.tgl<ff.start))return false;
+  if(ff.end&&(!r.tgl||r.tgl>ff.end))return false;
+  if(ff.q){const s=((r.noLap||r.noTgs||'')+' '+(r.petugas||'')).toLowerCase(); if(!s.includes(ff.q))return false;}
+  return true;
+}
+
+let fWO=[], fP0=[];
+function applyFilters(){
+  const ff=currentFilters();
+  fWO=woRows.filter(r=>matchRow(r,ff));
+  fP0=p0Rows.filter(r=>matchRow(r,ff));
+  page=0;
+  renderCards(ff);
+  renderTable();
+}
+
+function renderCards(ff){
+  const totalWO=fWO.filter(r=>r.valid).reduce((s,r)=>s+r.m,0);
+  const totalP0=fP0.filter(r=>r.valid).reduce((s,r)=>s+r.i,0);
+  const rctMin=fWO.filter(r=>r.valid).reduce((s,r)=>s+r.e,0)+fP0.filter(r=>r.valid).reduce((s,r)=>s+r.e,0);
+  const rctJam=rctMin/60;
+  const hariSet=new Set();
+  [...fWO,...fP0].forEach(r=>{if(r.tgl)hariSet.add(dkey(r.tgl));});
+  const hari=hariSet.size;
+  const rataJam=hari>0?rctJam/hari:0;
+  const cards=[
+    ['Jumlah WO', fWO.length],
+    ['Jumlah P0', fP0.length],
+    ['Total Performa WO', fmt(totalWO)],
+    ['Total Performa P0', fmt(totalP0)],
+    ['Total RCT (jam)', fmt(rctJam)],
+    ['Hari Kerja Aktif', hari],
+    ['Rata-rata Jam Kerja/Hari', fmt(rataJam)]
+  ];
+  document.getElementById('cards').innerHTML=cards.map(([l,v])=>`<div class="card"><div class="v">${v}</div><div class="l">${l}</div></div>`).join('');
+}
+
+const woCols=[['No Laporan','noLap'],['ID Petugas','petugas'],['UP3','up3'],['ULP','ulp'],['Area','area'],['Rayon','rayon'],['SLA(a)','a'],['Dispatch(b)','b'],['Travel(c)','c'],['Fixing','fix'],['Koef WO(d)','d'],['RCT(e)','e'],['Durasi(f)','f'],['Perf Tugas(g)','g'],['Rating','rating'],['Koef Rating(h)','h'],['Koef Unit(i)','i'],['Performance WO(m)','m']];
+const p0Cols=[['No Penugasan','noTgs'],['ID Petugas','petugas'],['UP3','up3'],['ULP','ulp'],['Area','area'],['Rayon','rayon'],['SLA(a)','a'],['Dispatch(b)','b'],['Travel(c)','c'],['Koef P0(d)','d'],['RCT(e)','e'],['Durasi(f)','f'],['Perf Tugas(g)','g'],['Koef Unit(h)','h'],['Performance P0(i)','i']];
+
+function renderTable(){
+  const cols=curTab==='wo'?woCols:p0Cols;
+  const rows=curTab==='wo'?fWO:fP0;
+  const th=document.getElementById(curTab==='wo'?'thWO':'thP0');
+  th.innerHTML=cols.map(c=>`<th>${c[0]}</th>`).join('');
+  const start=page*perPage, slice=rows.slice(start,start+perPage);
+  const tb=document.getElementById(curTab==='wo'?'tbWO':'tbP0');
+  tb.innerHTML=slice.map(r=>'<tr>'+cols.map(c=>{
+    let v=r[c[1]];
+    if(c[1]==='tgl'&&v)v=v.toLocaleDateString('id-ID');
+    if(typeof v==='number')v=fmt(v);
+    return `<td>${v ?? ''}</td>`;
+  }).join('')+'</tr>').join('') || '<tr><td colspan="'+cols.length+'">Tidak ada data</td></tr>';
+  document.getElementById('pgInfo').textContent=`${rows.length?start+1:0}-${Math.min(start+perPage,rows.length)} dari ${rows.length}`;
+  document.getElementById('wrapP0').classList.toggle('hide',curTab!=='p0');
+  document.getElementById('tbWO').parentElement.parentElement.classList.toggle('hide',curTab!=='wo');
+}
+
+document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  t.classList.add('active'); curTab=t.dataset.t; page=0; renderTable();
+}));
+document.getElementById('btnApply').addEventListener('click',applyFilters);
+document.getElementById('btnReload').addEventListener('click',loadAll);
+document.getElementById('search').addEventListener('input',()=>{applyFilters();});
+document.getElementById('fUP3').addEventListener('change',()=>{buildFilterOptions();});
+document.getElementById('prevPg').addEventListener('click',()=>{if(page>0){page--;renderTable();}});
+document.getElementById('nextPg').addEventListener('click',()=>{const rows=curTab==='wo'?fWO:fP0; if((page+1)*perPage<rows.length){page++;renderTable();}});
+
+loadAll();
 </script>
 </body>
 </html>
